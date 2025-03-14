@@ -4,6 +4,8 @@ namespace App\Jobs;
 
 use App\Models\EnqueuedRing;
 use App\Models\Ring;
+use App\Services\StatusService;
+use App\Services\WorkdayService;
 use DB;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Queue\Queueable;
@@ -25,7 +27,7 @@ class EnqueueRings implements ShouldQueue
      */
     public function handle(): void
     {
-        if ($this->isHoliday()) {
+        if (!$this->isWorkday()) {
             return;
         }
 
@@ -39,10 +41,12 @@ class EnqueueRings implements ShouldQueue
                 'type' => $ring->type,
             ]);
         }
+
+        $state = StatusService::put('last_update_at', now());
     }
 
-    public function isHoliday(): bool
+    public function isWorkday(): bool
     {
-        return false;
+        return WorkdayService::isWorkday(now());
     }
 }

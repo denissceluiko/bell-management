@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Models\Schedule;
 use Carbon\Carbon;
 
 class WorkdayService
@@ -13,60 +14,19 @@ class WorkdayService
 
     public static function isHoliday(Carbon $date): bool
     {
-        $formatted = $date->format('d.m');
-
-        if (in_array($formatted, static::nationalHolidays())) {
+        if (static::isHolidayOn($date)) {
             return true;
         }
 
-        if (in_array($formatted, static::otherHolidays())) {
-            return true;
-        }
-
-        if (in_array($formatted, static::otherWorkdays())) {
+        if (static::isAdditionalWorkdayOn($date)) {
             return false;
         }
 
-        if (static::isWeekend($date) || static::isSummerBreak($date)) {
+        if (static::isWeekend($date)) {
             return true;
         }
 
         return false;
-    }
-
-    public static function nationalHolidays(): array
-    {
-        return [
-            '01.01',
-            '01.05',
-            '04.05',
-            '23.06',
-            '24.06',
-            '18.11',
-            '24.12',
-            '25.12',
-            '26.12',
-            '31.12',
-        ];
-    }
-
-    public static function otherHolidays(): array
-    {
-        return [
-            '18.04',
-            '21.04',
-            '02.05',
-            '05.05',
-            '17.11',
-        ];
-    }
-
-    public static function otherWorkdays(): array
-    {
-        return [
-            '10.05',
-            '08.11',
-        ];
     }
 
     public static function isWeekend(Carbon $date)
@@ -74,8 +34,31 @@ class WorkdayService
         return $date->dayOfWeekIso == 6 || $date->dayOfWeekIso == 7;
     }
 
-    public static function isSummerBreak(Carbon $date)
+    public static function isHolidayOn(Carbon $date): bool
     {
-        return in_array($date->month, [6, 7, 8]);
+        $count = Schedule::query()
+           ->annualFor($date)
+           ->holiday()
+           ->count();
+
+        if ($count > 0)
+            return true;
+
+        $count = Schedule::query()
+           ->for($date)
+           ->holiday()
+           ->count();
+
+        return $count > 0;
+    }
+
+    public static function isAdditionalWorkdayOn(Carbon $date): bool
+    {
+        $count = Schedule::query()
+           ->for($date)
+           ->workday()
+           ->count();
+
+        return $count > 0;
     }
 }

@@ -33,7 +33,7 @@ class Heartbeat implements ShouldQueue
             return;
         }
 
-        $last_update = Carbon::parse($state['last_update_at']);
+        $last_update = Carbon::parse($state);
 
         if ($last_update->isToday()) {
             return;
